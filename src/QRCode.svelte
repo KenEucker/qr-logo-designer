@@ -17,18 +17,18 @@
   let qrLibraryLoaded = false;
 
   onMount(() => {
-    // Check if library already loaded (try both names)
-    if (window.QRCode || window.qrcode) {
+    // Check if library already loaded
+    if (window.qrcode) {
       qrLibraryLoaded = true;
       console.log('QR library already loaded');
       return;
     }
     
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    script.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
     script.onload = () => {
       qrLibraryLoaded = true;
-      console.log('QR library loaded successfully', { hasQRCode: !!window.QRCode, hasqrcode: !!window.qrcode });
+      console.log('QR library loaded successfully', { hasqrcode: !!window.qrcode });
     };
     script.onerror = () => {
       console.error('Failed to load QR library');
@@ -37,37 +37,35 @@
   });
 
   export function generateQR() {
-    console.log('generateQR called', { 
-      hasQRCode: !!window.QRCode,
+    console.log('generateQR called', {
       hasqrcode: !!window.qrcode,
-      hasCanvas: !!canvas, 
+      hasCanvas: !!canvas,
       libraryLoaded: qrLibraryLoaded,
-      url 
+      url
     });
-    
+
     if (!qrLibraryLoaded) {
       console.warn('QR library not loaded yet');
       return;
     }
-    
-    // Try both export names
-    const QRCodeLib = window.QRCode || window.qrcode;
-    
-    if (!QRCodeLib) {
+
+    if (!window.qrcode) {
       console.error('QRCode library not available on window object');
       return;
     }
-    
+
     if (!canvas) {
       console.error('Canvas not available');
       return;
     }
 
     try {
-      const qr = QRCodeLib(0, 'H');
+      // qrcode-generator API: qrcode(typeNumber, errorCorrectionLevel)
+      // typeNumber 0 = auto-detect
+      const qr = window.qrcode(0, 'H');
       qr.addData(url);
       qr.make();
-      
+
       const moduleCount = qr.getModuleCount();
       console.log('QR generated, module count:', moduleCount);
       drawQRCode(qr, moduleCount);
