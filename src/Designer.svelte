@@ -79,14 +79,17 @@
   let initialized = false;
   let qrLibraryReady = false;
   let debounceTimer;
+  let isRendering = false;
 
   // Debounced regenerate for real-time updates
+  // Use longer debounce for artistic mode to improve performance
   function debouncedRegenerate() {
     if (!qrLibraryReady) return;
     clearTimeout(debounceTimer);
+    const debounceTime = frameConfig.artisticEnabled ? 300 : 50;
     debounceTimer = setTimeout(() => {
       regenerate();
-    }, 50);
+    }, debounceTime);
   }
 
   // Track config changes by serializing (needed for deep reactivity in Svelte 5)
@@ -560,13 +563,14 @@
 
             {#if frameConfig.artisticEnabled}
               <p class="section-note">Artistic mode applies hand-drawn, sketchy effects to the inner pattern</p>
+              <p class="section-note performance-tip">⚡ Performance tip: Use 'Solid' or 'Hachure' fill styles and increase spacing (25+) for faster rendering</p>
 
               <div class="control-group">
                 <label class="control-label">
                   Fill Style
                   <select bind:value={frameConfig.artisticFillStyle} class="select">
-                    <option value="solid">Solid</option>
-                    <option value="hachure">Hachure (Cross-hatch)</option>
+                    <option value="solid">Solid (Fastest)</option>
+                    <option value="hachure">Hachure (Recommended)</option>
                     <option value="zigzag">Zigzag</option>
                     <option value="cross-hatch">Cross-Hatch Dense</option>
                     <option value="dots">Dots</option>
@@ -1026,6 +1030,12 @@
     color: #c4b5fd;
     font-size: 0.75rem;
     margin-top: 0;
+  }
+
+  .section-note.performance-tip {
+    background: rgba(234, 179, 8, 0.1);
+    border-left: 2px solid #eab308;
+    color: #fde047;
   }
 
   .subsection-title {

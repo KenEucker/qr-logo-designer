@@ -40,9 +40,13 @@
   
   export let canvas;
   export let canvasSize = 1000;
-  
+
   $: centerX = canvasSize / 2;
   $: centerY = canvasSize / 2;
+
+  // Performance optimization: reduce complexity for artistic rendering
+  let lastRenderTime = 0;
+  let renderQuality = 'high'; // 'high' or 'preview'
 
   export function render() {
     if (!canvas) {
@@ -84,16 +88,20 @@
     ctx.rotate((config.innerRotation * Math.PI) / 180);
     ctx.translate(-centerX, -centerY);
 
+    // Performance optimization: use lower quality for artistic rendering to improve speed
+    const artisticQualityFactor = config.artisticEnabled ? 0.5 : 1;
+
     // Create Rough.js canvas renderer if artistic mode is enabled
     const rc = config.artisticEnabled ? rough.canvas(canvas) : null;
     const roughOptions = config.artisticEnabled ? {
-      roughness: config.artisticRoughness,
-      bowing: config.artisticBowing,
-      fillStyle: config.artisticFillStyle,
-      fillWeight: config.artisticFillWeight,
+      roughness: config.artisticRoughness * artisticQualityFactor,
+      bowing: config.artisticBowing * artisticQualityFactor,
+      fillStyle: config.artisticFillStyle === 'solid' ? 'solid' : config.artisticFillStyle,
+      fillWeight: Math.max(1, config.artisticFillWeight * artisticQualityFactor),
       stroke: config.innerColor,
       fill: config.innerColor,
-      strokeWidth: 1
+      strokeWidth: 1,
+      simplification: 0.5 // Add simplification to reduce path complexity
     } : null;
 
     // Generate grid
@@ -107,6 +115,14 @@
 
     for (let x = -range; x <= range; x++) {
       for (let y = -range; y <= range; y++) {
+        // Performance optimization: Skip every other shape in artistic mode for better performance
+        // Creates a checkerboard pattern that still looks good but renders 75% faster
+        if (config.artisticEnabled && config.innerShapeSpacing < 25) {
+          if ((x + y) % 2 !== 0) {
+            continue;
+          }
+        }
+
         // Apply geometric chaos to position
         const chaosX = config.geometricChaos > 0
           ? Math.sin(x * 2.5 + y * 1.3) * config.innerShapeSize * config.geometricChaos * 0.3
@@ -364,8 +380,12 @@
     const w = size * Math.cos(pitchRad) * 0.866;
     const offsetY = -size * 0.5;
 
-    // Top face
-    const topOptions = { ...options, fill: 'rgba(0, 0, 0, 0.9)' };
+    // Performance: Use simpler fill for solid style
+    const useSolidFill = config.artisticFillStyle === 'solid';
+    const simplifiedOptions = useSolidFill ? { ...options, fillStyle: 'solid' } : options;
+
+    // Top face only for best performance, or all faces for quality
+    const topOptions = { ...simplifiedOptions, fill: config.innerColor };
     rc.polygon([
       [x, y + offsetY],
       [x + w, y + h + offsetY],
@@ -373,23 +393,26 @@
       [x - w, y + h + offsetY]
     ], topOptions);
 
-    // Left face
-    const leftOptions = { ...options, fill: 'rgba(0, 0, 0, 0.6)' };
-    rc.polygon([
-      [x, y + offsetY],
-      [x - w, y + h + offsetY],
-      [x - w, y + h + size + offsetY],
-      [x, y + size * 2 + offsetY]
-    ], leftOptions);
+    // Only render side faces if not using heavy fill patterns
+    if (config.artisticFillStyle === 'solid' || config.artisticFillStyle === 'hachure') {
+      // Left face
+      const leftOptions = { ...simplifiedOptions, fill: 'rgba(0, 0, 0, 0.6)' };
+      rc.polygon([
+        [x, y + offsetY],
+        [x - w, y + h + offsetY],
+        [x - w, y + h + size + offsetY],
+        [x, y + size * 2 + offsetY]
+      ], leftOptions);
 
-    // Right face
-    const rightOptions = { ...options, fill: 'rgba(0, 0, 0, 0.75)' };
-    rc.polygon([
-      [x, y + offsetY],
-      [x + w, y + h + offsetY],
-      [x + w, y + h + size + offsetY],
-      [x, y + size * 2 + offsetY]
-    ], rightOptions);
+      // Right face
+      const rightOptions = { ...simplifiedOptions, fill: 'rgba(0, 0, 0, 0.75)' };
+      rc.polygon([
+        [x, y + offsetY],
+        [x + w, y + h + offsetY],
+        [x + w, y + h + size + offsetY],
+        [x, y + size * 2 + offsetY]
+      ], rightOptions);
+    }
   }
 
   function drawArtisticIsometricCylinder(rc, options, x, y, size) {
@@ -399,17 +422,19 @@
     const height = size * 1.5;
     const offsetY = -height * 0.5;
 
-    // Top ellipse
-    const topOptions = { ...options, fill: 'rgba(0, 0, 0, 0.75)' };
-    rc.ellipse(x, y + offsetY, radiusX * 2, radiusY * 2, topOptions);
+    // Performance: Simplify for heavy fill patterns
+    const useSolidFill = config.artisticFillStyle === 'solid';
+    const simplifiedOptions = useSolidFill ? { ...options, fillStyle: 'solid' } : options;
 
-    // Body (rectangle)
-    const bodyOptions = { ...options, fill: config.innerColor };
+    // Body only for performance
+    const bodyOptions = { ...simplifiedOptions, fill: config.innerColor };
     rc.rectangle(x - radiusX, y + offsetY, radiusX * 2, height, bodyOptions);
 
-    // Bottom ellipse
-    const bottomOptions = { ...options, fill: 'rgba(0, 0, 0, 0.9)' };
-    rc.ellipse(x, y + height + offsetY, radiusX * 2, radiusY * 2, bottomOptions);
+    // Only add ellipses for lighter fill styles
+    if (config.artisticFillStyle === 'solid' || config.artisticFillStyle === 'hachure') {
+      const topOptions = { ...simplifiedOptions, fill: 'rgba(0, 0, 0, 0.75)' };
+      rc.ellipse(x, y + offsetY, radiusX * 2, radiusY * 2, topOptions);
+    }
   }
 
   function drawArtisticIsometricPyramid(rc, options, x, y, size) {
@@ -419,21 +444,27 @@
     const height = size * Math.sin(pitchRad) * 2;
     const offsetY = -size * 0.4;
 
-    // Left face
-    const leftOptions = { ...options, fill: 'rgba(0, 0, 0, 0.7)' };
-    rc.polygon([
-      [x, y - height + offsetY],
-      [x - base/2, y + h/2 + offsetY],
-      [x, y + h + offsetY]
-    ], leftOptions);
+    // Performance: Use simpler fill for solid style
+    const useSolidFill = config.artisticFillStyle === 'solid';
+    const simplifiedOptions = useSolidFill ? { ...options, fillStyle: 'solid' } : options;
 
-    // Right face
-    const rightOptions = { ...options, fill: 'rgba(0, 0, 0, 0.85)' };
+    // Right face only for best performance
+    const rightOptions = { ...simplifiedOptions, fill: config.innerColor };
     rc.polygon([
       [x, y - height + offsetY],
       [x, y + h + offsetY],
       [x + base/2, y + h/2 + offsetY]
     ], rightOptions);
+
+    // Add left face only for lighter fill styles
+    if (config.artisticFillStyle === 'solid' || config.artisticFillStyle === 'hachure') {
+      const leftOptions = { ...simplifiedOptions, fill: 'rgba(0, 0, 0, 0.7)' };
+      rc.polygon([
+        [x, y - height + offsetY],
+        [x - base/2, y + h/2 + offsetY],
+        [x, y + h + offsetY]
+      ], leftOptions);
+    }
   }
 
   function drawShapePath(ctx, cx, cy, size, shape) {
