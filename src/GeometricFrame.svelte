@@ -1,4 +1,6 @@
 <script>
+  import rough from 'roughjs';
+
   export let config = {
     // Outer shape
     outerShape: 'hexagon',
@@ -26,7 +28,14 @@
     roundingAmount: 0.45,
     paddingAmount: 0,
     edgeBleed: 0,
-    geometricChaos: 0
+    geometricChaos: 0,
+
+    // Artistic rendering parameters
+    artisticEnabled: false,
+    artisticRoughness: 1.5,
+    artisticFillStyle: 'hachure',
+    artisticFillWeight: 2,
+    artisticBowing: 1
   };
   
   export let canvas;
@@ -75,6 +84,18 @@
     ctx.rotate((config.innerRotation * Math.PI) / 180);
     ctx.translate(-centerX, -centerY);
 
+    // Create Rough.js canvas renderer if artistic mode is enabled
+    const rc = config.artisticEnabled ? rough.canvas(canvas) : null;
+    const roughOptions = config.artisticEnabled ? {
+      roughness: config.artisticRoughness,
+      bowing: config.artisticBowing,
+      fillStyle: config.artisticFillStyle,
+      fillWeight: config.artisticFillWeight,
+      stroke: config.innerColor,
+      fill: config.innerColor,
+      strokeWidth: 1
+    } : null;
+
     // Generate grid
     const maxDist = config.outerShapeSize + config.innerShapeSize * 2;
     const range = Math.ceil(maxDist / Math.max(config.innerShapeSpacing, 1));
@@ -103,25 +124,33 @@
         }
 
         // Draw shape based on type with styling effects
-        if (config.innerShapeType === 'module-based') {
-          const neighbors = {
-            left: false, right: false, top: false, bottom: false,
-            topLeft: false, topRight: false, bottomLeft: false, bottomRight: false
-          };
-          drawModule(ctx, shapeX - config.innerShapeSize/2, shapeY - config.innerShapeSize/2,
-                    config.innerShapeSize, neighbors, x, y);
-        } else if (config.innerShapeType === 'cube') {
-          drawIsometricCube(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
-        } else if (config.innerShapeType === 'cylinder') {
-          drawIsometricCylinder(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
-        } else if (config.innerShapeType === 'pyramid') {
-          drawIsometricPyramid(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
-        } else if (config.innerShapeType === 'circle') {
-          drawStyledCircle(ctx, shapeX, shapeY, effectiveSize, x, y);
-        } else if (config.innerShapeType === 'square') {
-          drawStyledSquare(ctx, shapeX, shapeY, effectiveSize, x, y);
-        } else if (config.innerShapeType === 'diamond') {
-          drawStyledDiamond(ctx, shapeX, shapeY, effectiveSize, x, y);
+        if (config.artisticEnabled && rc) {
+          // Use artistic rendering
+          drawArtisticShape(rc, roughOptions, shapeX, shapeY, effectiveSize, x, y);
+        } else {
+          // Use standard rendering
+          if (config.innerShapeType === 'module-based') {
+            const neighbors = {
+              left: false, right: false, top: false, bottom: false,
+              topLeft: false, topRight: false, bottomLeft: false, bottomRight: false
+            };
+            drawModule(ctx, shapeX - config.innerShapeSize/2, shapeY - config.innerShapeSize/2,
+                      config.innerShapeSize, neighbors, x, y);
+          } else if (config.innerShapeType === 'cube') {
+            drawIsometricCube(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
+          } else if (config.innerShapeType === 'cylinder') {
+            drawIsometricCylinder(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
+          } else if (config.innerShapeType === 'square') {
+            drawStyledSquare(ctx, shapeX, shapeY, effectiveSize, x, y);
+          } else if (config.innerShapeType === 'diamond') {
+            drawStyledDiamond(ctx, shapeX, shapeY, effectiveSize, x, y);
+          } else if (config.innerShapeType === 'circle') {
+            drawStyledCircle(ctx, shapeX, shapeY, effectiveSize, x, y);
+          } else if (config.innerShapeType === 'pyramid') {
+            drawIsometricPyramid(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
+          } else if (config.innerShapeType === 'cylinder') {
+            drawIsometricCylinder(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
+          }
         }
       }
     }
@@ -290,6 +319,121 @@
       ctx.closePath();
       ctx.fill();
     }
+  }
+
+  function drawArtisticShape(rc, options, x, y, size, row, col) {
+    const halfSize = size / 2;
+
+    switch (config.innerShapeType) {
+      case 'circle':
+        rc.circle(x, y, size, options);
+        break;
+
+      case 'square':
+      case 'module-based':
+        rc.rectangle(x - halfSize, y - halfSize, size, size, options);
+        break;
+
+      case 'diamond':
+        // Create diamond path
+        rc.polygon([
+          [x, y - halfSize],
+          [x + halfSize, y],
+          [x, y + halfSize],
+          [x - halfSize, y]
+        ], options);
+        break;
+
+      case 'cube':
+        drawArtisticIsometricCube(rc, options, x, y, size);
+        break;
+
+      case 'cylinder':
+        drawArtisticIsometricCylinder(rc, options, x, y, size);
+        break;
+
+      case 'pyramid':
+        drawArtisticIsometricPyramid(rc, options, x, y, size);
+        break;
+    }
+  }
+
+  function drawArtisticIsometricCube(rc, options, x, y, size) {
+    const pitchRad = (config.innerPitch * Math.PI) / 180;
+    const h = size * Math.sin(pitchRad);
+    const w = size * Math.cos(pitchRad) * 0.866;
+    const offsetY = -size * 0.5;
+
+    // Top face
+    const topOptions = { ...options, fill: 'rgba(0, 0, 0, 0.9)' };
+    rc.polygon([
+      [x, y + offsetY],
+      [x + w, y + h + offsetY],
+      [x, y + h * 2 + offsetY],
+      [x - w, y + h + offsetY]
+    ], topOptions);
+
+    // Left face
+    const leftOptions = { ...options, fill: 'rgba(0, 0, 0, 0.6)' };
+    rc.polygon([
+      [x, y + offsetY],
+      [x - w, y + h + offsetY],
+      [x - w, y + h + size + offsetY],
+      [x, y + size * 2 + offsetY]
+    ], leftOptions);
+
+    // Right face
+    const rightOptions = { ...options, fill: 'rgba(0, 0, 0, 0.75)' };
+    rc.polygon([
+      [x, y + offsetY],
+      [x + w, y + h + offsetY],
+      [x + w, y + h + size + offsetY],
+      [x, y + size * 2 + offsetY]
+    ], rightOptions);
+  }
+
+  function drawArtisticIsometricCylinder(rc, options, x, y, size) {
+    const pitchRad = (config.innerPitch * Math.PI) / 180;
+    const radiusX = size * 0.866;
+    const radiusY = size * Math.sin(pitchRad) * 0.5;
+    const height = size * 1.5;
+    const offsetY = -height * 0.5;
+
+    // Top ellipse
+    const topOptions = { ...options, fill: 'rgba(0, 0, 0, 0.75)' };
+    rc.ellipse(x, y + offsetY, radiusX * 2, radiusY * 2, topOptions);
+
+    // Body (rectangle)
+    const bodyOptions = { ...options, fill: config.innerColor };
+    rc.rectangle(x - radiusX, y + offsetY, radiusX * 2, height, bodyOptions);
+
+    // Bottom ellipse
+    const bottomOptions = { ...options, fill: 'rgba(0, 0, 0, 0.9)' };
+    rc.ellipse(x, y + height + offsetY, radiusX * 2, radiusY * 2, bottomOptions);
+  }
+
+  function drawArtisticIsometricPyramid(rc, options, x, y, size) {
+    const pitchRad = (config.innerPitch * Math.PI) / 180;
+    const base = size * 1.5;
+    const h = size * Math.cos(pitchRad) * 0.866;
+    const height = size * Math.sin(pitchRad) * 2;
+    const offsetY = -size * 0.4;
+
+    // Left face
+    const leftOptions = { ...options, fill: 'rgba(0, 0, 0, 0.7)' };
+    rc.polygon([
+      [x, y - height + offsetY],
+      [x - base/2, y + h/2 + offsetY],
+      [x, y + h + offsetY]
+    ], leftOptions);
+
+    // Right face
+    const rightOptions = { ...options, fill: 'rgba(0, 0, 0, 0.85)' };
+    rc.polygon([
+      [x, y - height + offsetY],
+      [x, y + h + offsetY],
+      [x + base/2, y + h/2 + offsetY]
+    ], rightOptions);
   }
 
   function drawShapePath(ctx, cx, cy, size, shape) {

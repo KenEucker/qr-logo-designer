@@ -33,25 +33,32 @@
     outerBorderCount: 3,
     outerBorderSpacing: 15,
     outerColor: '#000000',
-    
+
     innerShapeType: 'cube',
     innerShapeSize: 15,
     innerShapeSpacing: 18,
     innerRotation: 0,
     innerPitch: 30,
     innerColor: '#000000',
-    
+
     centerVoidSize: 300,
     centerVoidRounding: 0,
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
-    
+
     // Pass through module styling
     roundingAmount: 0.45,
     paddingAmount: 0,
     edgeBleed: 0,
-    geometricChaos: 0
+    geometricChaos: 0,
+
+    // Artistic rendering parameters
+    artisticEnabled: false,
+    artisticRoughness: 1.5,
+    artisticFillStyle: 'hachure',
+    artisticFillWeight: 2,
+    artisticBowing: 1
   };
   
   // Component references
@@ -537,6 +544,80 @@
                 </label>
               </div>
             {/if}
+
+            <h3 class="subsection-title">Artistic Rendering</h3>
+
+            <div class="control-group">
+              <label class="control-label checkbox-label">
+                <input
+                  type="checkbox"
+                  bind:checked={frameConfig.artisticEnabled}
+                  class="checkbox"
+                />
+                Enable Artistic Mode
+              </label>
+            </div>
+
+            {#if frameConfig.artisticEnabled}
+              <p class="section-note">Artistic mode applies hand-drawn, sketchy effects to the inner pattern</p>
+
+              <div class="control-group">
+                <label class="control-label">
+                  Fill Style
+                  <select bind:value={frameConfig.artisticFillStyle} class="select">
+                    <option value="solid">Solid</option>
+                    <option value="hachure">Hachure (Cross-hatch)</option>
+                    <option value="zigzag">Zigzag</option>
+                    <option value="cross-hatch">Cross-Hatch Dense</option>
+                    <option value="dots">Dots</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="zigzag-line">Zigzag Line</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  Roughness: <span class="value">{frameConfig.artisticRoughness.toFixed(1)}</span>
+                  <input
+                    type="range"
+                    bind:value={frameConfig.artisticRoughness}
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    class="slider magenta"
+                  />
+                </label>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  Bowing: <span class="value">{frameConfig.artisticBowing.toFixed(1)}</span>
+                  <input
+                    type="range"
+                    bind:value={frameConfig.artisticBowing}
+                    min="0"
+                    max="10"
+                    step="0.5"
+                    class="slider magenta"
+                  />
+                </label>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  Fill Weight: <span class="value">{frameConfig.artisticFillWeight}</span>
+                  <input
+                    type="range"
+                    bind:value={frameConfig.artisticFillWeight}
+                    min="1"
+                    max="10"
+                    step="1"
+                    class="slider magenta"
+                  />
+                </label>
+              </div>
+            {/if}
           </div>
         {/if}
       </div>
@@ -1005,6 +1086,24 @@
 
   .slider.cyan::-webkit-slider-thumb {
     background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%);
+  }
+
+  .slider.magenta::-webkit-slider-thumb {
+    background: linear-gradient(135deg, #d946ef 0%, #c026d3 100%);
+  }
+
+  .checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    accent-color: #d946ef;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
   }
 
   .select {
