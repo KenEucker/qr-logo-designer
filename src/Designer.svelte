@@ -19,7 +19,7 @@
     geometricChaos: 0,
     finderOuterShape: 'rounded-square',
     finderInnerShape: 'rounded-square',
-    finderCenterOverlap: -0.3,
+    finderCenterOverlap: 0,
     centerVoidRadius: 0.15
   };
   
@@ -406,12 +406,12 @@
               <label class="control-label">
                 Shape Size: <span class="value">{frameConfig.innerShapeSize}px</span>
               </label>
-              <input 
-                type="range" 
-                bind:value={frameConfig.innerShapeSize} 
-                min="10" 
-                max="30" 
-                step="2" 
+              <input
+                type="range"
+                bind:value={frameConfig.innerShapeSize}
+                min="5"
+                max="100"
+                step="5"
                 class="slider cyan"
               />
             </div>
@@ -420,12 +420,12 @@
               <label class="control-label">
                 Spacing: <span class="value">{frameConfig.innerShapeSpacing}px</span>
               </label>
-              <input 
-                type="range" 
-                bind:value={frameConfig.innerShapeSpacing} 
-                min="10" 
-                max="40" 
-                step="2" 
+              <input
+                type="range"
+                bind:value={frameConfig.innerShapeSpacing}
+                min="5"
+                max="100"
+                step="5"
                 class="slider cyan"
               />
             </div>
@@ -500,12 +500,12 @@
               <label class="control-label">
                 QR Void Size: <span class="value">{frameConfig.centerVoidSize}px</span>
               </label>
-              <input 
-                type="range" 
-                bind:value={frameConfig.centerVoidSize} 
-                min="200" 
-                max="400" 
-                step="10" 
+              <input
+                type="range"
+                bind:value={frameConfig.centerVoidSize}
+                min="200"
+                max="900"
+                step="10"
                 class="slider cyan"
               />
             </div>

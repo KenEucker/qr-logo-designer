@@ -9,7 +9,7 @@
     geometricChaos: 0,
     finderOuterShape: 'rounded-square',
     finderInnerShape: 'rounded-square',
-    finderCenterOverlap: -0.3,
+    finderCenterOverlap: 0,
     centerVoidRadius: 0.15 // Percentage of canvas size
   };
   
@@ -209,9 +209,11 @@
 
   function drawFinderPattern(ctx, cx, cy, moduleSize) {
     const size = moduleSize * 7;
-    const outerSize = size * 0.9;
-    const middleSize = size * 0.6;
-    const innerSize = size * 0.3;
+    // Correct finder pattern proportions: 7:5:3 ratio
+    // Outer black: 7 modules, Middle white: 5 modules, Inner black: 3 modules
+    const outerSize = size;  // 7/7 = 100%
+    const middleSize = size * (5 / 7);  // 5/7 ≈ 71.4%
+    const innerSize = size * (3 / 7);  // 3/7 ≈ 42.8%
     
     ctx.fillStyle = '#000000';
     
@@ -233,12 +235,13 @@
     
     ctx.fillStyle = '#000000';
     if (config.finderInnerShape === 'rounded-square') {
-      const adjustedSize = innerSize * (1 + config.finderCenterOverlap);
+      // Apply overlap adjustment (positive = larger, negative = smaller)
+      const adjustedSize = innerSize * (1 + config.finderCenterOverlap * 0.5);
       drawRoundedRect(ctx, cx - adjustedSize/2, cy - adjustedSize/2, adjustedSize, adjustedSize, adjustedSize * 0.2);
       ctx.fill();
     } else {
       ctx.beginPath();
-      ctx.arc(cx, cy, innerSize/2 * (1 + config.finderCenterOverlap), 0, Math.PI * 2);
+      ctx.arc(cx, cy, innerSize/2 * (1 + config.finderCenterOverlap * 0.5), 0, Math.PI * 2);
       ctx.fill();
     }
   }

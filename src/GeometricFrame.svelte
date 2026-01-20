@@ -134,10 +134,12 @@
 
   function drawOuterBorders(ctx) {
     for (let i = 0; i < config.outerBorderCount; i++) {
-      const borderSize = config.outerShapeSize - (i * config.outerBorderSpacing);
+      // Borders are drawn outside the shape (increasing size)
+      const borderSize = config.outerShapeSize + (i * config.outerBorderSpacing);
       const opacity = 1 - (i * 0.15);
-      
-      if (borderSize > 50) {
+
+      // Check canvas bounds (canvasSize / 2 is max radius from center)
+      if (borderSize < canvasSize / 2) {
         ctx.strokeStyle = config.outerColor;
         ctx.globalAlpha = opacity;
         ctx.lineWidth = 3;
