@@ -19,7 +19,7 @@
     geometricChaos: 0,
     finderOuterShape: 'rounded-square',
     finderInnerShape: 'rounded-square',
-    finderCenterOverlap: -0.3,
+    finderCenterOverlap: 0,
     centerVoidRadius: 0.15
   };
   
@@ -421,9 +421,9 @@
               <input
                 type="range"
                 bind:value={frameConfig.innerShapeSize}
-                min="10"
-                max="30"
-                step="2"
+                min="5"
+                max="100"
+                step="5"
                 class="slider cyan"
               />
             </div>
@@ -435,9 +435,9 @@
               <input
                 type="range"
                 bind:value={frameConfig.innerShapeSpacing}
-                min="10"
-                max="40"
-                step="2"
+                min="5"
+                max="100"
+                step="5"
                 class="slider cyan"
               />
             </div>
@@ -516,7 +516,7 @@
                 type="range"
                 bind:value={frameConfig.centerVoidSize}
                 min="200"
-                max="400"
+                max="900"
                 step="10"
                 class="slider cyan"
               />
