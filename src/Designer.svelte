@@ -42,6 +42,7 @@
     innerColor: '#000000',
     
     centerVoidSize: 300,
+    centerVoidRounding: 0,
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
@@ -575,6 +576,20 @@
                 min="200"
                 max="900"
                 step="10"
+                class="slider cyan"
+              />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">
+                Void Corner Rounding: <span class="value">{(frameConfig.centerVoidRounding * 100).toFixed(0)}%</span>
+              </label>
+              <input
+                type="range"
+                bind:value={frameConfig.centerVoidRounding}
+                min="0"
+                max="1"
+                step="0.05"
                 class="slider cyan"
               />
             </div>

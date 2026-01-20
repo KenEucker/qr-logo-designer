@@ -6,7 +6,7 @@
     outerBorderCount: 3,
     outerBorderSpacing: 15,
     outerColor: '#000000',
-    
+
     // Inner pattern
     innerShapeType: 'cube',
     innerShapeSize: 15,
@@ -14,13 +14,14 @@
     innerRotation: 0,
     innerPitch: 30,
     innerColor: '#000000',
-    
+
     // Center
     centerVoidSize: 300,
+    centerVoidRounding: 0,
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
-    
+
     // Module styling for module-based pattern
     roundingAmount: 0.45,
     paddingAmount: 0,
@@ -96,9 +97,8 @@
         const shapeX = centerX + x * config.innerShapeSpacing + chaosX;
         const shapeY = centerY + y * config.innerShapeSpacing + chaosY;
 
-        // Skip if in center void
-        if (Math.abs(shapeX - centerX) < config.centerVoidSize / 2 &&
-            Math.abs(shapeY - centerY) < config.centerVoidSize / 2) {
+        // Skip if in center void (respecting rounded corners)
+        if (isInsideRoundedRect(shapeX, shapeY, centerX, centerY, config.centerVoidSize, config.centerVoidRounding)) {
           continue;
         }
 
@@ -150,12 +150,86 @@
 
   function drawCenterVoid(ctx) {
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(
-      centerX - config.centerVoidSize / 2,
-      centerY - config.centerVoidSize / 2,
-      config.centerVoidSize,
-      config.centerVoidSize
-    );
+    const x = centerX - config.centerVoidSize / 2;
+    const y = centerY - config.centerVoidSize / 2;
+    const size = config.centerVoidSize;
+    const maxRadius = size / 2;
+    const radius = maxRadius * config.centerVoidRounding;
+
+    if (radius > 0) {
+      ctx.beginPath();
+      drawRoundedRectPath(ctx, x, y, size, size, radius);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  function drawRoundedRectPath(ctx, x, y, width, height, radius) {
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  function isInsideRoundedRect(px, py, cx, cy, size, roundingAmount) {
+    const halfSize = size / 2;
+    const maxRadius = halfSize;
+    const radius = maxRadius * roundingAmount;
+
+    // Quick rejection: outside bounding box
+    if (Math.abs(px - cx) > halfSize || Math.abs(py - cy) > halfSize) {
+      return false;
+    }
+
+    // If no rounding, simple rectangle check
+    if (radius <= 0) {
+      return true;
+    }
+
+    // Check if in corner regions
+    const left = cx - halfSize;
+    const right = cx + halfSize;
+    const top = cy - halfSize;
+    const bottom = cy + halfSize;
+
+    // Inside the cross-shaped inner region (not in corner areas)
+    if ((px >= left + radius && px <= right - radius) ||
+        (py >= top + radius && py <= bottom - radius)) {
+      return true;
+    }
+
+    // Check each corner with circular test
+    const corners = [
+      { x: left + radius, y: top + radius },      // top-left
+      { x: right - radius, y: top + radius },     // top-right
+      { x: right - radius, y: bottom - radius },  // bottom-right
+      { x: left + radius, y: bottom - radius }    // bottom-left
+    ];
+
+    for (const corner of corners) {
+      const dx = px - corner.x;
+      const dy = py - corner.y;
+      // Check if point is in the corner quadrant
+      const inCornerQuadrant =
+        (corner.x === left + radius && px < corner.x && corner.y === top + radius && py < corner.y) ||
+        (corner.x === right - radius && px > corner.x && corner.y === top + radius && py < corner.y) ||
+        (corner.x === right - radius && px > corner.x && corner.y === bottom - radius && py > corner.y) ||
+        (corner.x === left + radius && px < corner.x && corner.y === bottom - radius && py > corner.y);
+
+      if (inCornerQuadrant) {
+        // Point is in corner quadrant, check if inside the rounded corner
+        return (dx * dx + dy * dy) <= radius * radius;
+      }
+    }
+
+    return true;
   }
 
   function drawCenterLogo(ctx) {
