@@ -5,7 +5,10 @@
   import QRLogo from './QRLogo.svelte';
 
   let url = 'https://example.com';
-  
+
+  // Designer mode: 'combined', 'qr-only', 'frame-only'
+  let designerMode = 'combined';
+
   // Collapsible sections
   let qrControlsOpen = true;
   let frameControlsOpen = true;
@@ -206,6 +209,18 @@
     link.href = logoDisplayCanvas.toDataURL();
     link.click();
   }
+
+  function switchMode(mode) {
+    designerMode = mode;
+    // Regenerate when switching modes
+    debouncedRegenerate();
+  }
+
+  function openInMainDesigner() {
+    // Transfer current settings to the combined designer
+    designerMode = 'combined';
+    debouncedRegenerate();
+  }
 </script>
 
 <svelte:head>
@@ -218,12 +233,46 @@
 <QRLogo bind:this={logoComponent} bind:canvas={logoCanvas} {qrCanvas} {frameCanvas} {frameConfig} />
 
 <div class="app">
+  <!-- Navigation Menu -->
+  <nav class="designer-nav">
+    <button
+      class="nav-button"
+      class:active={designerMode === 'combined'}
+      on:click={() => switchMode('combined')}
+    >
+      Combined Designer
+    </button>
+    <button
+      class="nav-button"
+      class:active={designerMode === 'qr-only'}
+      on:click={() => switchMode('qr-only')}
+    >
+      QR Code Only
+    </button>
+    <button
+      class="nav-button"
+      class:active={designerMode === 'frame-only'}
+      on:click={() => switchMode('frame-only')}
+    >
+      Frame Only
+    </button>
+  </nav>
+
   <div class="main-layout">
     <!-- Left Panel: Controls -->
     <div class="controls-panel">
-      <h1 class="title">QR Designer</h1>
+      <h1 class="title">
+        {#if designerMode === 'combined'}
+          QR Designer
+        {:else if designerMode === 'qr-only'}
+          QR Code Designer
+        {:else}
+          Frame Designer
+        {/if}
+      </h1>
 
-      <!-- URL Input -->
+      <!-- URL Input - shown in combined and qr-only modes -->
+      {#if designerMode === 'combined' || designerMode === 'qr-only'}
       <div class="url-section">
         <label class="input-label">QR Code URL</label>
         <input
@@ -233,8 +282,10 @@
           class="url-input"
         />
       </div>
+      {/if}
 
-      <!-- QR Module Controls -->
+      <!-- QR Module Controls - shown in combined and qr-only modes -->
+      {#if designerMode === 'combined' || designerMode === 'qr-only'}
       <div class="controls-section">
         <button class="section-header" on:click={() => qrControlsOpen = !qrControlsOpen}>
           <h2 class="controls-title">QR Module Styling</h2>
@@ -243,7 +294,7 @@
 
         {#if qrControlsOpen}
           <div class="controls-content">
-            <p class="section-note">These controls affect both QR modules and module-based inner patterns</p>
+            <p class="section-note">These controls affect both QR modules and all frame inner patterns</p>
 
             <div class="control-group">
               <label class="control-label">
@@ -335,8 +386,10 @@
           </div>
         {/if}
       </div>
+      {/if}
 
-      <!-- Frame Controls -->
+      <!-- Frame Controls - shown in combined and frame-only modes -->
+      {#if designerMode === 'combined' || designerMode === 'frame-only'}
       <div class="controls-section frame">
         <button class="section-header" on:click={() => frameControlsOpen = !frameControlsOpen}>
           <h2 class="controls-title">Geometric Frame</h2>
@@ -404,7 +457,7 @@
             <div class="control-group">
               <label class="control-label">Pattern Type</label>
               <select bind:value={frameConfig.innerShapeType} class="select">
-                <option value="module-based">Module Based (uses QR styling)</option>
+                <option value="module-based">Module Based</option>
                 <option value="cube">Isometric Cube</option>
                 <option value="cylinder">Isometric Cylinder</option>
                 <option value="pyramid">Isometric Pyramid</option>
@@ -413,6 +466,8 @@
                 <option value="diamond">Diamond</option>
               </select>
             </div>
+
+            <p class="section-note">All pattern types are styled by QR Module controls (rounding, padding, edge bleed, chaos)</p>
 
             <div class="control-group">
               <label class="control-label">
@@ -474,8 +529,10 @@
           </div>
         {/if}
       </div>
+      {/if}
 
-      <!-- Center Logo Controls -->
+      <!-- Center Logo Controls - shown in combined and frame-only modes -->
+      {#if designerMode === 'combined' || designerMode === 'frame-only'}
       <div class="controls-section frame">
         <button class="section-header" on:click={() => centerControlsOpen = !centerControlsOpen}>
           <h2 class="controls-title">Center Logo</h2>
@@ -524,44 +581,146 @@
           </div>
         {/if}
       </div>
+      {/if}
+
+      <!-- QR Styling Controls for Frame-only mode -->
+      {#if designerMode === 'frame-only'}
+      <div class="controls-section">
+        <button class="section-header" on:click={() => qrControlsOpen = !qrControlsOpen}>
+          <h2 class="controls-title">Pattern Styling (QR Effects)</h2>
+          <span class="toggle-icon">{qrControlsOpen ? '−' : '+'}</span>
+        </button>
+
+        {#if qrControlsOpen}
+          <div class="controls-content">
+            <p class="section-note">These controls affect how the inner frame patterns are rendered</p>
+
+            <div class="control-group">
+              <label class="control-label">
+                Rounding: <span class="value">{qrConfig.roundingAmount.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                bind:value={qrConfig.roundingAmount}
+                min="0"
+                max="1"
+                step="0.05"
+                class="slider"
+              />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">
+                Padding: <span class="value">{qrConfig.paddingAmount.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                bind:value={qrConfig.paddingAmount}
+                min="0"
+                max="0.4"
+                step="0.05"
+                class="slider"
+              />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">
+                Edge Bleed: <span class="value">{qrConfig.edgeBleed.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                bind:value={qrConfig.edgeBleed}
+                min="0"
+                max="1"
+                step="0.1"
+                class="slider green"
+              />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">
+                Geometric Chaos: <span class="value">{qrConfig.geometricChaos.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                bind:value={qrConfig.geometricChaos}
+                min="0"
+                max="1"
+                step="0.1"
+                class="slider green"
+              />
+            </div>
+          </div>
+        {/if}
+      </div>
+      {/if}
+
+      <!-- Open in Main Designer Button -->
+      {#if designerMode !== 'combined'}
+      <button class="main-designer-button" on:click={openInMainDesigner}>
+        Open in Main Designer
+      </button>
+      {/if}
     </div>
 
     <!-- Right Panel: Previews -->
     <div class="preview-panel">
       <h2 class="preview-header">Live Preview</h2>
 
-      <!-- Main Combined Preview -->
-      <div class="main-preview">
-        <div class="canvas-wrapper large">
-          <canvas bind:this={logoDisplayCanvas} class="canvas"></canvas>
+      {#if designerMode === 'combined'}
+        <!-- Main Combined Preview -->
+        <div class="main-preview">
+          <div class="canvas-wrapper large">
+            <canvas bind:this={logoDisplayCanvas} class="canvas"></canvas>
+          </div>
+          <button class="download-button" on:click={downloadLogo}>
+            Download QR Logo
+          </button>
         </div>
-        <button class="download-button" on:click={downloadLogo}>
-          Download QR Logo
-        </button>
-      </div>
 
-      <!-- Secondary Previews -->
-      <div class="secondary-previews">
-        <div class="preview-card">
-          <h3 class="preview-title">QR Code</h3>
-          <div class="canvas-wrapper small">
+        <!-- Secondary Previews -->
+        <div class="secondary-previews">
+          <div class="preview-card">
+            <h3 class="preview-title">QR Code</h3>
+            <div class="canvas-wrapper small">
+              <canvas bind:this={qrDisplayCanvas} class="canvas"></canvas>
+            </div>
+            <button class="download-button small" on:click={downloadQR}>
+              Download
+            </button>
+          </div>
+
+          <div class="preview-card">
+            <h3 class="preview-title">Frame</h3>
+            <div class="canvas-wrapper small">
+              <canvas bind:this={frameDisplayCanvas} class="canvas"></canvas>
+            </div>
+            <button class="download-button small" on:click={downloadFrame}>
+              Download
+            </button>
+          </div>
+        </div>
+      {:else if designerMode === 'qr-only'}
+        <!-- QR Only Preview -->
+        <div class="main-preview">
+          <div class="canvas-wrapper large">
             <canvas bind:this={qrDisplayCanvas} class="canvas"></canvas>
           </div>
-          <button class="download-button small" on:click={downloadQR}>
-            Download
+          <button class="download-button" on:click={downloadQR}>
+            Download QR Code
           </button>
         </div>
-
-        <div class="preview-card">
-          <h3 class="preview-title">Frame</h3>
-          <div class="canvas-wrapper small">
+      {:else}
+        <!-- Frame Only Preview -->
+        <div class="main-preview">
+          <div class="canvas-wrapper large">
             <canvas bind:this={frameDisplayCanvas} class="canvas"></canvas>
           </div>
-          <button class="download-button small" on:click={downloadFrame}>
-            Download
+          <button class="download-button" on:click={downloadFrame}>
+            Download Frame
           </button>
         </div>
-      </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -582,10 +741,46 @@
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
   }
 
+  /* Navigation Menu */
+  .designer-nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+    flex-wrap: wrap;
+  }
+
+  .nav-button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    color: #94a3b8;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-button:hover {
+    background: rgba(167, 139, 250, 0.1);
+    color: #e2e8f0;
+    border-color: rgba(167, 139, 250, 0.5);
+  }
+
+  .nav-button.active {
+    background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  }
+
   .main-layout {
     display: grid;
     grid-template-columns: 1fr;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
   }
 
   @media (min-width: 900px) {
@@ -903,6 +1098,26 @@
   .download-button.small {
     padding: 0.625rem;
     font-size: 0.75rem;
+  }
+
+  .main-designer-button {
+    width: 100%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    margin-top: 1rem;
+  }
+
+  .main-designer-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
   }
 
   @media (max-width: 899px) {
