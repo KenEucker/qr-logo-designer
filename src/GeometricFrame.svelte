@@ -6,7 +6,7 @@
     outerBorderCount: 3,
     outerBorderSpacing: 15,
     outerColor: '#000000',
-    
+
     // Inner pattern
     innerShapeType: 'cube',
     innerShapeSize: 15,
@@ -14,13 +14,14 @@
     innerRotation: 0,
     innerPitch: 30,
     innerColor: '#000000',
-    
+
     // Center
     centerVoidSize: 300,
+    centerVoidRounding: 0,
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
-    
+
     // Module styling for module-based pattern
     roundingAmount: 0.45,
     paddingAmount: 0,
@@ -63,72 +64,68 @@
 
   function drawInnerPattern(ctx) {
     ctx.save();
-    
+
     // Create clip path for outer shape
     ctx.beginPath();
     drawShapePath(ctx, centerX, centerY, config.outerShapeSize, config.outerShape);
     ctx.clip();
-    
+
     // Apply rotation
     ctx.translate(centerX, centerY);
     ctx.rotate((config.innerRotation * Math.PI) / 180);
     ctx.translate(-centerX, -centerY);
-    
+
     // Generate grid
     const maxDist = config.outerShapeSize + config.innerShapeSize * 2;
     const range = Math.ceil(maxDist / Math.max(config.innerShapeSpacing, 1));
-    
+
+    // Calculate styling effects
+    const padding = config.paddingAmount * config.innerShapeSize;
+    const bleed = config.edgeBleed * config.innerShapeSize * 0.3;
+    const effectiveSize = config.innerShapeSize - padding * 2 + bleed * 2;
+
     for (let x = -range; x <= range; x++) {
       for (let y = -range; y <= range; y++) {
-        const shapeX = centerX + x * config.innerShapeSpacing;
-        const shapeY = centerY + y * config.innerShapeSpacing;
-        
-        // Skip if in center void
-        if (Math.abs(shapeX - centerX) < config.centerVoidSize / 2 && 
-            Math.abs(shapeY - centerY) < config.centerVoidSize / 2) {
+        // Apply geometric chaos to position
+        const chaosX = config.geometricChaos > 0
+          ? Math.sin(x * 2.5 + y * 1.3) * config.innerShapeSize * config.geometricChaos * 0.3
+          : 0;
+        const chaosY = config.geometricChaos > 0
+          ? Math.cos(x * 1.8 + y * 2.2) * config.innerShapeSize * config.geometricChaos * 0.3
+          : 0;
+
+        const shapeX = centerX + x * config.innerShapeSpacing + chaosX;
+        const shapeY = centerY + y * config.innerShapeSpacing + chaosY;
+
+        // Skip if in center void (respecting rounded corners)
+        if (isInsideRoundedRect(shapeX, shapeY, centerX, centerY, config.centerVoidSize, config.centerVoidRounding)) {
           continue;
         }
-        
-        // Draw shape based on type
+
+        // Draw shape based on type with styling effects
         if (config.innerShapeType === 'module-based') {
           const neighbors = {
             left: false, right: false, top: false, bottom: false,
             topLeft: false, topRight: false, bottomLeft: false, bottomRight: false
           };
-          drawModule(ctx, shapeX - config.innerShapeSize/2, shapeY - config.innerShapeSize/2, 
+          drawModule(ctx, shapeX - config.innerShapeSize/2, shapeY - config.innerShapeSize/2,
                     config.innerShapeSize, neighbors, x, y);
         } else if (config.innerShapeType === 'cube') {
-          drawIsometricCube(ctx, shapeX, shapeY, config.innerShapeSize, config.innerPitch);
+          drawIsometricCube(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
         } else if (config.innerShapeType === 'cylinder') {
-          drawIsometricCylinder(ctx, shapeX, shapeY, config.innerShapeSize, config.innerPitch);
+          drawIsometricCylinder(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
         } else if (config.innerShapeType === 'pyramid') {
-          drawIsometricPyramid(ctx, shapeX, shapeY, config.innerShapeSize, config.innerPitch);
+          drawIsometricPyramid(ctx, shapeX, shapeY, effectiveSize, config.innerPitch, x, y);
         } else if (config.innerShapeType === 'circle') {
-          ctx.fillStyle = config.innerColor;
-          ctx.beginPath();
-          ctx.arc(shapeX, shapeY, config.innerShapeSize / 2, 0, Math.PI * 2);
-          ctx.fill();
+          drawStyledCircle(ctx, shapeX, shapeY, effectiveSize, x, y);
         } else if (config.innerShapeType === 'square') {
-          ctx.fillStyle = config.innerColor;
-          ctx.fillRect(
-            shapeX - config.innerShapeSize / 2,
-            shapeY - config.innerShapeSize / 2,
-            config.innerShapeSize,
-            config.innerShapeSize
-          );
+          drawStyledSquare(ctx, shapeX, shapeY, effectiveSize, x, y);
         } else if (config.innerShapeType === 'diamond') {
-          ctx.fillStyle = config.innerColor;
-          ctx.beginPath();
-          ctx.moveTo(shapeX, shapeY - config.innerShapeSize / 2);
-          ctx.lineTo(shapeX + config.innerShapeSize / 2, shapeY);
-          ctx.lineTo(shapeX, shapeY + config.innerShapeSize / 2);
-          ctx.lineTo(shapeX - config.innerShapeSize / 2, shapeY);
-          ctx.closePath();
-          ctx.fill();
+          drawStyledDiamond(ctx, shapeX, shapeY, effectiveSize, x, y);
         }
       }
     }
-    
+
     ctx.restore();
   }
 
@@ -153,12 +150,86 @@
 
   function drawCenterVoid(ctx) {
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(
-      centerX - config.centerVoidSize / 2,
-      centerY - config.centerVoidSize / 2,
-      config.centerVoidSize,
-      config.centerVoidSize
-    );
+    const x = centerX - config.centerVoidSize / 2;
+    const y = centerY - config.centerVoidSize / 2;
+    const size = config.centerVoidSize;
+    const maxRadius = size / 2;
+    const radius = maxRadius * config.centerVoidRounding;
+
+    if (radius > 0) {
+      ctx.beginPath();
+      drawRoundedRectPath(ctx, x, y, size, size, radius);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  function drawRoundedRectPath(ctx, x, y, width, height, radius) {
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  function isInsideRoundedRect(px, py, cx, cy, size, roundingAmount) {
+    const halfSize = size / 2;
+    const maxRadius = halfSize;
+    const radius = maxRadius * roundingAmount;
+
+    // Quick rejection: outside bounding box
+    if (Math.abs(px - cx) > halfSize || Math.abs(py - cy) > halfSize) {
+      return false;
+    }
+
+    // If no rounding, simple rectangle check
+    if (radius <= 0) {
+      return true;
+    }
+
+    // Check if in corner regions
+    const left = cx - halfSize;
+    const right = cx + halfSize;
+    const top = cy - halfSize;
+    const bottom = cy + halfSize;
+
+    // Inside the cross-shaped inner region (not in corner areas)
+    if ((px >= left + radius && px <= right - radius) ||
+        (py >= top + radius && py <= bottom - radius)) {
+      return true;
+    }
+
+    // Check each corner with circular test
+    const corners = [
+      { x: left + radius, y: top + radius },      // top-left
+      { x: right - radius, y: top + radius },     // top-right
+      { x: right - radius, y: bottom - radius },  // bottom-right
+      { x: left + radius, y: bottom - radius }    // bottom-left
+    ];
+
+    for (const corner of corners) {
+      const dx = px - corner.x;
+      const dy = py - corner.y;
+      // Check if point is in the corner quadrant
+      const inCornerQuadrant =
+        (corner.x === left + radius && px < corner.x && corner.y === top + radius && py < corner.y) ||
+        (corner.x === right - radius && px > corner.x && corner.y === top + radius && py < corner.y) ||
+        (corner.x === right - radius && px > corner.x && corner.y === bottom - radius && py > corner.y) ||
+        (corner.x === left + radius && px < corner.x && corner.y === bottom - radius && py > corner.y);
+
+      if (inCornerQuadrant) {
+        // Point is in corner quadrant, check if inside the rounded corner
+        return (dx * dx + dy * dy) <= radius * radius;
+      }
+    }
+
+    return true;
   }
 
   function drawCenterLogo(ctx) {
@@ -247,82 +318,243 @@
     }
   }
 
-  function drawIsometricCube(ctx, x, y, size, pitch) {
-    const pitchRad = (pitch * Math.PI) / 180;
-    const h = size * Math.sin(pitchRad);
-    const w = size * Math.cos(pitchRad) * 0.866;
-    const offsetY = -size * 0.5;
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+  function drawStyledCircle(ctx, x, y, size, row, col) {
+    const radius = size / 2;
+    // Apply edge bleed effect by adding slight size variation
+    const bleedEffect = config.edgeBleed > 0 ? size * config.edgeBleed * 0.15 : 0;
+    const finalRadius = radius + bleedEffect;
+
+    ctx.fillStyle = config.innerColor;
     ctx.beginPath();
-    ctx.moveTo(x, y + offsetY);
-    ctx.lineTo(x + w, y + h + offsetY);
-    ctx.lineTo(x, y + h * 2 + offsetY);
-    ctx.lineTo(x - w, y + h + offsetY);
-    ctx.closePath();
+    ctx.arc(x, y, finalRadius, 0, Math.PI * 2);
     ctx.fill();
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  }
+
+  function drawStyledSquare(ctx, x, y, size, row, col) {
+    const halfSize = size / 2;
+    const maxRadius = halfSize;
+    const radius = maxRadius * config.roundingAmount;
+
+    ctx.fillStyle = config.innerColor;
     ctx.beginPath();
-    ctx.moveTo(x, y + offsetY);
-    ctx.lineTo(x - w, y + h + offsetY);
-    ctx.lineTo(x - w, y + h + size + offsetY);
-    ctx.lineTo(x, y + size * 2 + offsetY);
-    ctx.closePath();
-    ctx.fill();
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.beginPath();
-    ctx.moveTo(x, y + offsetY);
-    ctx.lineTo(x + w, y + h + offsetY);
-    ctx.lineTo(x + w, y + h + size + offsetY);
-    ctx.lineTo(x, y + size * 2 + offsetY);
+
+    // Draw rounded rectangle
+    const x1 = x - halfSize;
+    const y1 = y - halfSize;
+
+    ctx.moveTo(x1 + radius, y1);
+    ctx.lineTo(x1 + size - radius, y1);
+    if (radius > 0) {
+      ctx.quadraticCurveTo(x1 + size, y1, x1 + size, y1 + radius);
+    }
+    ctx.lineTo(x1 + size, y1 + size - radius);
+    if (radius > 0) {
+      ctx.quadraticCurveTo(x1 + size, y1 + size, x1 + size - radius, y1 + size);
+    }
+    ctx.lineTo(x1 + radius, y1 + size);
+    if (radius > 0) {
+      ctx.quadraticCurveTo(x1, y1 + size, x1, y1 + size - radius);
+    }
+    ctx.lineTo(x1, y1 + radius);
+    if (radius > 0) {
+      ctx.quadraticCurveTo(x1, y1, x1 + radius, y1);
+    }
     ctx.closePath();
     ctx.fill();
   }
 
-  function drawIsometricCylinder(ctx, x, y, size, pitch) {
+  function drawStyledDiamond(ctx, x, y, size, row, col) {
+    const halfSize = size / 2;
+    const radius = halfSize * config.roundingAmount * 0.5;
+
+    ctx.fillStyle = config.innerColor;
+    ctx.beginPath();
+
+    if (radius > 0) {
+      // Rounded diamond using quadratic curves
+      const offset = radius * 0.7;
+      ctx.moveTo(x, y - halfSize + offset);
+      ctx.quadraticCurveTo(x + offset, y - halfSize + offset, x + halfSize - offset, y - offset);
+      ctx.quadraticCurveTo(x + halfSize - offset, y + offset, x + offset, y + halfSize - offset);
+      ctx.quadraticCurveTo(x - offset, y + halfSize - offset, x - halfSize + offset, y + offset);
+      ctx.quadraticCurveTo(x - halfSize + offset, y - offset, x, y - halfSize + offset);
+    } else {
+      // Sharp diamond
+      ctx.moveTo(x, y - halfSize);
+      ctx.lineTo(x + halfSize, y);
+      ctx.lineTo(x, y + halfSize);
+      ctx.lineTo(x - halfSize, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawIsometricCube(ctx, x, y, size, pitch, row, col) {
+    const pitchRad = (pitch * Math.PI) / 180;
+    const h = size * Math.sin(pitchRad);
+    const w = size * Math.cos(pitchRad) * 0.866;
+    const offsetY = -size * 0.5;
+
+    // Apply rounding effect to cube faces
+    const roundFactor = config.roundingAmount * 0.3;
+
+    // Top face
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.beginPath();
+    if (roundFactor > 0) {
+      drawRoundedQuad(ctx,
+        x, y + offsetY,
+        x + w, y + h + offsetY,
+        x, y + h * 2 + offsetY,
+        x - w, y + h + offsetY,
+        size * roundFactor
+      );
+    } else {
+      ctx.moveTo(x, y + offsetY);
+      ctx.lineTo(x + w, y + h + offsetY);
+      ctx.lineTo(x, y + h * 2 + offsetY);
+      ctx.lineTo(x - w, y + h + offsetY);
+      ctx.closePath();
+    }
+    ctx.fill();
+
+    // Left face
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.beginPath();
+    if (roundFactor > 0) {
+      drawRoundedQuad(ctx,
+        x, y + offsetY,
+        x - w, y + h + offsetY,
+        x - w, y + h + size + offsetY,
+        x, y + size * 2 + offsetY,
+        size * roundFactor
+      );
+    } else {
+      ctx.moveTo(x, y + offsetY);
+      ctx.lineTo(x - w, y + h + offsetY);
+      ctx.lineTo(x - w, y + h + size + offsetY);
+      ctx.lineTo(x, y + size * 2 + offsetY);
+      ctx.closePath();
+    }
+    ctx.fill();
+
+    // Right face
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.beginPath();
+    if (roundFactor > 0) {
+      drawRoundedQuad(ctx,
+        x, y + offsetY,
+        x + w, y + h + offsetY,
+        x + w, y + h + size + offsetY,
+        x, y + size * 2 + offsetY,
+        size * roundFactor
+      );
+    } else {
+      ctx.moveTo(x, y + offsetY);
+      ctx.lineTo(x + w, y + h + offsetY);
+      ctx.lineTo(x + w, y + h + size + offsetY);
+      ctx.lineTo(x, y + size * 2 + offsetY);
+      ctx.closePath();
+    }
+    ctx.fill();
+  }
+
+  function drawRoundedQuad(ctx, x1, y1, x2, y2, x3, y3, x4, y4, radius) {
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const r = Math.min(radius, 5);
+
+    ctx.moveTo(lerp(x1, x2, 0.1), lerp(y1, y2, 0.1));
+    ctx.lineTo(lerp(x1, x2, 0.9), lerp(y1, y2, 0.9));
+    ctx.quadraticCurveTo(x2, y2, lerp(x2, x3, 0.1), lerp(y2, y3, 0.1));
+    ctx.lineTo(lerp(x2, x3, 0.9), lerp(y2, y3, 0.9));
+    ctx.quadraticCurveTo(x3, y3, lerp(x3, x4, 0.1), lerp(y3, y4, 0.1));
+    ctx.lineTo(lerp(x3, x4, 0.9), lerp(y3, y4, 0.9));
+    ctx.quadraticCurveTo(x4, y4, lerp(x4, x1, 0.1), lerp(y4, y1, 0.1));
+    ctx.lineTo(lerp(x4, x1, 0.9), lerp(y4, y1, 0.9));
+    ctx.quadraticCurveTo(x1, y1, lerp(x1, x2, 0.1), lerp(y1, y2, 0.1));
+    ctx.closePath();
+  }
+
+  function drawIsometricCylinder(ctx, x, y, size, pitch, row, col) {
     const pitchRad = (pitch * Math.PI) / 180;
     const radiusX = size * 0.866;
     const radiusY = size * Math.sin(pitchRad) * 0.5;
     const height = size * 1.5;
     const offsetY = -height * 0.5;
-    
+
+    // Apply rounding effect as smoothness
+    const smoothness = 1 + config.roundingAmount * 0.5;
+
+    // Top ellipse
     ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
     ctx.beginPath();
-    ctx.ellipse(x, y + offsetY, radiusX, radiusY, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y + offsetY, radiusX * smoothness, radiusY * smoothness, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
+    // Body
     ctx.fillRect(x - radiusX, y + offsetY, radiusX * 2, height);
-    
+
+    // Bottom ellipse
     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     ctx.beginPath();
-    ctx.ellipse(x, y + height + offsetY, radiusX, radiusY, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y + height + offsetY, radiusX * smoothness, radiusY * smoothness, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  function drawIsometricPyramid(ctx, x, y, size, pitch) {
+  function drawIsometricPyramid(ctx, x, y, size, pitch, row, col) {
     const pitchRad = (pitch * Math.PI) / 180;
     const base = size * 1.5;
     const h = size * Math.cos(pitchRad) * 0.866;
     const height = size * Math.sin(pitchRad) * 2;
     const offsetY = -size * 0.4;
-    
+
+    // Apply rounding to pyramid edges
+    const roundFactor = config.roundingAmount * 0.2;
+
+    // Left face
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.beginPath();
-    ctx.moveTo(x, y - height + offsetY);
-    ctx.lineTo(x - base/2, y + h/2 + offsetY);
-    ctx.lineTo(x, y + h + offsetY);
-    ctx.closePath();
+    if (roundFactor > 0) {
+      const apex = { x: x, y: y - height + offsetY };
+      const left = { x: x - base/2, y: y + h/2 + offsetY };
+      const center = { x: x, y: y + h + offsetY };
+      drawRoundedTriangle(ctx, apex.x, apex.y, left.x, left.y, center.x, center.y, size * roundFactor);
+    } else {
+      ctx.moveTo(x, y - height + offsetY);
+      ctx.lineTo(x - base/2, y + h/2 + offsetY);
+      ctx.lineTo(x, y + h + offsetY);
+      ctx.closePath();
+    }
     ctx.fill();
-    
+
+    // Right face
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.beginPath();
-    ctx.moveTo(x, y - height + offsetY);
-    ctx.lineTo(x, y + h + offsetY);
-    ctx.lineTo(x + base/2, y + h/2 + offsetY);
-    ctx.closePath();
+    if (roundFactor > 0) {
+      const apex = { x: x, y: y - height + offsetY };
+      const center = { x: x, y: y + h + offsetY };
+      const right = { x: x + base/2, y: y + h/2 + offsetY };
+      drawRoundedTriangle(ctx, apex.x, apex.y, center.x, center.y, right.x, right.y, size * roundFactor);
+    } else {
+      ctx.moveTo(x, y - height + offsetY);
+      ctx.lineTo(x, y + h + offsetY);
+      ctx.lineTo(x + base/2, y + h/2 + offsetY);
+      ctx.closePath();
+    }
     ctx.fill();
+  }
+
+  function drawRoundedTriangle(ctx, x1, y1, x2, y2, x3, y3, radius) {
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    ctx.moveTo(lerp(x1, x2, 0.15), lerp(y1, y2, 0.15));
+    ctx.lineTo(lerp(x1, x2, 0.85), lerp(y1, y2, 0.85));
+    ctx.quadraticCurveTo(x2, y2, lerp(x2, x3, 0.15), lerp(y2, y3, 0.15));
+    ctx.lineTo(lerp(x2, x3, 0.85), lerp(y2, y3, 0.85));
+    ctx.quadraticCurveTo(x3, y3, lerp(x3, x1, 0.15), lerp(y3, y1, 0.15));
+    ctx.lineTo(lerp(x3, x1, 0.85), lerp(y3, y1, 0.85));
+    ctx.quadraticCurveTo(x1, y1, lerp(x1, x2, 0.15), lerp(y1, y2, 0.15));
+    ctx.closePath();
   }
 
   function drawModule(ctx, x, y, size, neighbors, row, col) {
