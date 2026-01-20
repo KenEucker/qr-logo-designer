@@ -275,13 +275,15 @@
       <!-- URL Input - shown in combined and qr-only modes -->
       {#if designerMode === 'combined' || designerMode === 'qr-only'}
       <div class="url-section">
-        <label class="input-label">QR Code URL</label>
-        <input
-          type="text"
-          bind:value={url}
-          placeholder="Enter URL here..."
-          class="url-input"
-        />
+        <label class="input-label">
+          QR Code URL
+          <input
+            type="text"
+            bind:value={url}
+            placeholder="Enter URL here..."
+            class="url-input"
+          />
+        </label>
       </div>
       {/if}
 
@@ -300,89 +302,93 @@
             <div class="control-group">
               <label class="control-label">
                 Rounding: <span class="value">{qrConfig.roundingAmount.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.roundingAmount}
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  class="slider"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.roundingAmount}
-                min="0"
-                max="1"
-                step="0.05"
-                class="slider"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Padding: <span class="value">{qrConfig.paddingAmount.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.paddingAmount}
+                  min="0"
+                  max="0.4"
+                  step="0.05"
+                  class="slider"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.paddingAmount}
-                min="0"
-                max="0.4"
-                step="0.05"
-                class="slider"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Edge Bleed: <span class="value">{qrConfig.edgeBleed.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.edgeBleed}
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="slider green"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.edgeBleed}
-                min="0"
-                max="1"
-                step="0.1"
-                class="slider green"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Geometric Chaos: <span class="value">{qrConfig.geometricChaos.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.geometricChaos}
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="slider green"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.geometricChaos}
-                min="0"
-                max="1"
-                step="0.1"
-                class="slider green"
-              />
             </div>
 
             <h3 class="subsection-title">Finder Patterns</h3>
 
             <div class="control-group">
-              <label class="control-label">Outer Shape</label>
-              <select bind:value={qrConfig.finderOuterShape} class="select">
-                <option value="rounded-square">Rounded Square</option>
-                <option value="circle">Circle</option>
-              </select>
+              <label class="control-label">
+                Outer Shape
+                <select bind:value={qrConfig.finderOuterShape} class="select">
+                  <option value="rounded-square">Rounded Square</option>
+                  <option value="circle">Circle</option>
+                </select>
+              </label>
             </div>
 
             <div class="control-group">
-              <label class="control-label">Inner Shape</label>
-              <select bind:value={qrConfig.finderInnerShape} class="select">
-                <option value="rounded-square">Rounded Square</option>
-                <option value="circle">Circle</option>
-              </select>
+              <label class="control-label">
+                Inner Shape
+                <select bind:value={qrConfig.finderInnerShape} class="select">
+                  <option value="rounded-square">Rounded Square</option>
+                  <option value="circle">Circle</option>
+                </select>
+              </label>
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Center Overlap: <span class="value">{qrConfig.finderCenterOverlap.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.finderCenterOverlap}
+                  min="-0.5"
+                  max="0.5"
+                  step="0.05"
+                  class="slider blue"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.finderCenterOverlap}
-                min="-0.5"
-                max="0.5"
-                step="0.05"
-                class="slider blue"
-              />
             </div>
           </div>
         {/if}
@@ -402,70 +408,74 @@
             <h3 class="subsection-title">Outer Shape</h3>
 
             <div class="control-group">
-              <label class="control-label">Shape Type</label>
-              <select bind:value={frameConfig.outerShape} class="select">
-                <option value="hexagon">Hexagon</option>
-                <option value="circle">Circle</option>
-                <option value="square">Square</option>
-                <option value="octagon">Octagon</option>
-              </select>
+              <label class="control-label">
+                Shape Type
+                <select bind:value={frameConfig.outerShape} class="select">
+                  <option value="hexagon">Hexagon</option>
+                  <option value="circle">Circle</option>
+                  <option value="square">Square</option>
+                  <option value="octagon">Octagon</option>
+                </select>
+              </label>
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Size: <span class="value">{frameConfig.outerShapeSize}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.outerShapeSize}
+                  min="300"
+                  max="490"
+                  step="10"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.outerShapeSize}
-                min="300"
-                max="490"
-                step="10"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Border Lines: <span class="value">{frameConfig.outerBorderCount}</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.outerBorderCount}
+                  min="1"
+                  max="5"
+                  step="1"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.outerBorderCount}
-                min="1"
-                max="5"
-                step="1"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Border Spacing: <span class="value">{frameConfig.outerBorderSpacing}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.outerBorderSpacing}
+                  min="5"
+                  max="30"
+                  step="5"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.outerBorderSpacing}
-                min="5"
-                max="30"
-                step="5"
-                class="slider cyan"
-              />
             </div>
 
             <h3 class="subsection-title">Inner Pattern</h3>
 
             <div class="control-group">
-              <label class="control-label">Pattern Type</label>
-              <select bind:value={frameConfig.innerShapeType} class="select">
-                <option value="module-based">Module Based</option>
-                <option value="cube">Isometric Cube</option>
-                <option value="cylinder">Isometric Cylinder</option>
-                <option value="pyramid">Isometric Pyramid</option>
-                <option value="circle">Circle</option>
-                <option value="square">Square</option>
-                <option value="diamond">Diamond</option>
-              </select>
+              <label class="control-label">
+                Pattern Type
+                <select bind:value={frameConfig.innerShapeType} class="select">
+                  <option value="module-based">Module Based</option>
+                  <option value="cube">Isometric Cube</option>
+                  <option value="cylinder">Isometric Cylinder</option>
+                  <option value="pyramid">Isometric Pyramid</option>
+                  <option value="circle">Circle</option>
+                  <option value="square">Square</option>
+                  <option value="diamond">Diamond</option>
+                </select>
+              </label>
             </div>
 
             <p class="section-note">All pattern types are styled by QR Module controls (rounding, padding, edge bleed, chaos)</p>
@@ -473,58 +483,58 @@
             <div class="control-group">
               <label class="control-label">
                 Shape Size: <span class="value">{frameConfig.innerShapeSize}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.innerShapeSize}
+                  min="5"
+                  max="100"
+                  step="5"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.innerShapeSize}
-                min="5"
-                max="100"
-                step="5"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Spacing: <span class="value">{frameConfig.innerShapeSpacing}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.innerShapeSpacing}
+                  min="5"
+                  max="100"
+                  step="5"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.innerShapeSpacing}
-                min="5"
-                max="100"
-                step="5"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Rotation: <span class="value">{frameConfig.innerRotation}°</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.innerRotation}
+                  min="0"
+                  max="360"
+                  step="5"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.innerRotation}
-                min="0"
-                max="360"
-                step="5"
-                class="slider cyan"
-              />
             </div>
 
             {#if frameConfig.innerShapeType === 'cube' || frameConfig.innerShapeType === 'cylinder' || frameConfig.innerShapeType === 'pyramid'}
               <div class="control-group">
                 <label class="control-label">
                   Isometric Pitch: <span class="value">{frameConfig.innerPitch}°</span>
+                  <input
+                    type="range"
+                    bind:value={frameConfig.innerPitch}
+                    min="0"
+                    max="60"
+                    step="5"
+                    class="slider cyan"
+                  />
                 </label>
-                <input
-                  type="range"
-                  bind:value={frameConfig.innerPitch}
-                  min="0"
-                  max="60"
-                  step="5"
-                  class="slider cyan"
-                />
               </div>
             {/if}
           </div>
@@ -543,55 +553,57 @@
         {#if centerControlsOpen}
           <div class="controls-content">
             <div class="control-group">
-              <label class="control-label">Logo Shape</label>
-              <select bind:value={frameConfig.centerLogoShape} class="select">
-                <option value="circles">Concentric Circles</option>
-                <option value="square">Rotated Squares</option>
-                <option value="star">Star</option>
-                <option value="diamond">Diamond</option>
-              </select>
+              <label class="control-label">
+                Logo Shape
+                <select bind:value={frameConfig.centerLogoShape} class="select">
+                  <option value="circles">Concentric Circles</option>
+                  <option value="square">Rotated Squares</option>
+                  <option value="star">Star</option>
+                  <option value="diamond">Diamond</option>
+                </select>
+              </label>
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Logo Size: <span class="value">{frameConfig.centerLogoSize}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.centerLogoSize}
+                  min="30"
+                  max="100"
+                  step="5"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.centerLogoSize}
-                min="30"
-                max="100"
-                step="5"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 QR Void Size: <span class="value">{frameConfig.centerVoidSize}px</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.centerVoidSize}
+                  min="200"
+                  max="900"
+                  step="10"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.centerVoidSize}
-                min="200"
-                max="900"
-                step="10"
-                class="slider cyan"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Void Corner Rounding: <span class="value">{(frameConfig.centerVoidRounding * 100).toFixed(0)}%</span>
+                <input
+                  type="range"
+                  bind:value={frameConfig.centerVoidRounding}
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  class="slider cyan"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={frameConfig.centerVoidRounding}
-                min="0"
-                max="1"
-                step="0.05"
-                class="slider cyan"
-              />
             </div>
           </div>
         {/if}
@@ -613,57 +625,57 @@
             <div class="control-group">
               <label class="control-label">
                 Rounding: <span class="value">{qrConfig.roundingAmount.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.roundingAmount}
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  class="slider"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.roundingAmount}
-                min="0"
-                max="1"
-                step="0.05"
-                class="slider"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Padding: <span class="value">{qrConfig.paddingAmount.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.paddingAmount}
+                  min="0"
+                  max="0.4"
+                  step="0.05"
+                  class="slider"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.paddingAmount}
-                min="0"
-                max="0.4"
-                step="0.05"
-                class="slider"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Edge Bleed: <span class="value">{qrConfig.edgeBleed.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.edgeBleed}
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="slider green"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.edgeBleed}
-                min="0"
-                max="1"
-                step="0.1"
-                class="slider green"
-              />
             </div>
 
             <div class="control-group">
               <label class="control-label">
                 Geometric Chaos: <span class="value">{qrConfig.geometricChaos.toFixed(2)}</span>
+                <input
+                  type="range"
+                  bind:value={qrConfig.geometricChaos}
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  class="slider green"
+                />
               </label>
-              <input
-                type="range"
-                bind:value={qrConfig.geometricChaos}
-                min="0"
-                max="1"
-                step="0.1"
-                class="slider green"
-              />
             </div>
           </div>
         {/if}
