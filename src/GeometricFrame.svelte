@@ -20,9 +20,12 @@
     // Center
     centerVoidSize: 300,
     centerVoidRounding: 0,
+    centerLogoType: 'shape', // 'shape' or 'image'
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
+    centerLogoImage: null, // Image object for custom logo
+    centerLogoImageData: null, // Data URL for reactivity
 
     // Module styling for module-based pattern
     roundingAmount: 0.45,
@@ -278,20 +281,43 @@
   }
 
   function drawCenterLogo(ctx) {
+    // Check if we should draw a custom image or geometric shape
+    if (config.centerLogoType === 'image' && config.centerLogoImage) {
+      drawCustomLogo(ctx);
+    } else {
+      drawGeometricLogo(ctx);
+    }
+  }
+
+  function drawCustomLogo(ctx) {
+    const img = config.centerLogoImage;
+    if (!img || !img.complete) return;
+
+    const size = config.centerLogoSize * 2; // Double size for better visibility
+    const x = centerX - size / 2;
+    const y = centerY - size / 2;
+
+    // Draw the image centered and scaled to fit
+    ctx.save();
+    ctx.drawImage(img, x, y, size, size);
+    ctx.restore();
+  }
+
+  function drawGeometricLogo(ctx) {
     ctx.fillStyle = config.centerLogoColor;
     ctx.strokeStyle = config.centerLogoColor;
-    
+
     if (config.centerLogoShape === 'circles') {
       ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.arc(centerX, centerY, config.centerLogoSize, 0, Math.PI * 2);
       ctx.stroke();
-      
+
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.arc(centerX, centerY, config.centerLogoSize * 0.65, 0, Math.PI * 2);
       ctx.stroke();
-      
+
       ctx.beginPath();
       ctx.arc(centerX, centerY, config.centerLogoSize * 0.3, 0, Math.PI * 2);
       ctx.fill();
@@ -299,11 +325,11 @@
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(Math.PI / 4);
-      
+
       ctx.lineWidth = 6;
       ctx.strokeRect(-config.centerLogoSize, -config.centerLogoSize, config.centerLogoSize * 2, config.centerLogoSize * 2);
       ctx.fillRect(-config.centerLogoSize * 0.6, -config.centerLogoSize * 0.6, config.centerLogoSize * 1.2, config.centerLogoSize * 1.2);
-      
+
       ctx.restore();
     } else if (config.centerLogoShape === 'star') {
       ctx.beginPath();
@@ -326,7 +352,7 @@
       ctx.lineTo(centerX - config.centerLogoSize * 2, centerY);
       ctx.closePath();
       ctx.stroke();
-      
+
       ctx.beginPath();
       ctx.moveTo(centerX, centerY - config.centerLogoSize);
       ctx.lineTo(centerX + config.centerLogoSize, centerY);

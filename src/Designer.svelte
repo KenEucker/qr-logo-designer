@@ -43,9 +43,12 @@
 
     centerVoidSize: 300,
     centerVoidRounding: 0,
+    centerLogoType: 'shape', // 'shape' or 'image'
     centerLogoShape: 'circles',
     centerLogoSize: 60,
     centerLogoColor: '#000000',
+    centerLogoImage: null, // Stores the Image object
+    centerLogoImageData: null, // Stores the data URL for reactivity
 
     // Pass through module styling
     roundingAmount: 0.45,
@@ -129,26 +132,26 @@
       console.warn('Not initialized yet');
       return;
     }
-    
+
     console.log('Regenerating all components...');
-    
+
     // Sync module styling to frame config
     frameConfig.roundingAmount = qrConfig.roundingAmount;
     frameConfig.paddingAmount = qrConfig.paddingAmount;
     frameConfig.edgeBleed = qrConfig.edgeBleed;
     frameConfig.geometricChaos = qrConfig.geometricChaos;
-    
+
     // Trigger re-renders
     if (qrComponent) {
       console.log('Generating QR...');
       qrComponent.generateQR();
     }
-    
+
     if (frameComponent) {
       console.log('Rendering frame...');
       frameComponent.render();
     }
-    
+
     // Wait for renders to complete, then composite and update displays
     setTimeout(() => {
       if (logoComponent) {
@@ -157,6 +160,45 @@
       }
       updateDisplayCanvases();
     }, 200);
+  }
+
+  function handleLogoUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Create FileReader to read the image
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Store both the Image object and data URL
+        frameConfig.centerLogoImage = img;
+        frameConfig.centerLogoImageData = e.target.result;
+        frameConfig = frameConfig; // Trigger reactivity
+        console.log('Logo image loaded:', img.width, 'x', img.height);
+
+        // Trigger re-render
+        debouncedRegenerate();
+      };
+      img.onerror = () => {
+        alert('Failed to load image');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearLogo() {
+    frameConfig.centerLogoImage = null;
+    frameConfig.centerLogoImageData = null;
+    frameConfig = frameConfig; // Trigger reactivity
+    debouncedRegenerate();
   }
   
   function updateDisplayCanvases() {
@@ -639,29 +681,80 @@
           <div class="controls-content">
             <div class="control-group">
               <label class="control-label">
-                Logo Shape
-                <select bind:value={frameConfig.centerLogoShape} class="select">
-                  <option value="circles">Concentric Circles</option>
-                  <option value="square">Rotated Squares</option>
-                  <option value="star">Star</option>
-                  <option value="diamond">Diamond</option>
+                Logo Type
+                <select bind:value={frameConfig.centerLogoType} class="select">
+                  <option value="shape">Geometric Shape</option>
+                  <option value="image">Custom Image</option>
                 </select>
               </label>
             </div>
 
-            <div class="control-group">
-              <label class="control-label">
-                Logo Size: <span class="value">{frameConfig.centerLogoSize}px</span>
-                <input
-                  type="range"
-                  bind:value={frameConfig.centerLogoSize}
-                  min="30"
-                  max="100"
-                  step="5"
-                  class="slider cyan"
-                />
-              </label>
-            </div>
+            {#if frameConfig.centerLogoType === 'shape'}
+              <div class="control-group">
+                <label class="control-label">
+                  Logo Shape
+                  <select bind:value={frameConfig.centerLogoShape} class="select">
+                    <option value="circles">Concentric Circles</option>
+                    <option value="square">Rotated Squares</option>
+                    <option value="star">Star</option>
+                    <option value="diamond">Diamond</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">
+                  Logo Size: <span class="value">{frameConfig.centerLogoSize}px</span>
+                  <input
+                    type="range"
+                    bind:value={frameConfig.centerLogoSize}
+                    min="30"
+                    max="100"
+                    step="5"
+                    class="slider cyan"
+                  />
+                </label>
+              </div>
+            {:else}
+              <div class="control-group">
+                <label class="control-label">
+                  Upload Logo Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    on:change={handleLogoUpload}
+                    class="file-input"
+                  />
+                </label>
+              </div>
+
+              {#if frameConfig.centerLogoImageData}
+                <div class="control-group">
+                  <div class="logo-preview">
+                    <img src={frameConfig.centerLogoImageData} alt="Logo preview" />
+                  </div>
+                  <button class="clear-button" on:click={clearLogo}>
+                    Clear Logo
+                  </button>
+                </div>
+
+                <div class="control-group">
+                  <label class="control-label">
+                    Logo Size: <span class="value">{frameConfig.centerLogoSize}px</span>
+                    <input
+                      type="range"
+                      bind:value={frameConfig.centerLogoSize}
+                      min="30"
+                      max="200"
+                      step="5"
+                      class="slider cyan"
+                    />
+                  </label>
+                </div>
+              {:else}
+                <p class="section-note">Upload a PNG, JPG, or SVG image to use as your center logo</p>
+              {/if}
+            {/if}
 
             <div class="control-group">
               <label class="control-label">
@@ -1130,6 +1223,76 @@
 
   .select:focus {
     border-color: #a78bfa;
+  }
+
+  .file-input {
+    width: 100%;
+    padding: 0.625rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .file-input:hover {
+    border-color: #a78bfa;
+  }
+
+  .file-input::file-selector-button {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.75rem;
+  }
+
+  .file-input::file-selector-button:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+
+  .logo-preview {
+    width: 100%;
+    max-width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(167, 139, 250, 0.3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .logo-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .clear-button {
+    width: 100%;
+    padding: 0.625rem;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 6px;
+    color: #fca5a5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .clear-button:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+    color: #fff;
   }
 
   /* Right Panel - Previews */
